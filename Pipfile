@@ -4,9 +4,14 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-fastapi = "*"
-pandas = "*"
-numpy = "*"
+fastapi = "0.115.7"
+joblib = "1.4.2"
+numpy = "2.2.3"
+pandas = "2.2.3"
+python-dotenv = "1.0.1"
+scikit-learn = "1.6.1"
+sqlalchemy = "2.0.38"
+uvicorn = "0.34.0"
 
 [dev-packages]
 
