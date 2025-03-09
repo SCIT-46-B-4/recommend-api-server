@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, Request
+import json
 from sqlalchemy.orm import Session
 
 from src.core.exception.not_found_exceptions import UserNotFoundExceiption
 from src.service.schedule import get_schedule_by_id
 from src.service.user import get_user_by_id
-from src.db.database import get_db
+from src.db.connection import get_db
 from src.dto.response.user_response import UserResponse
+from src.core.model.rankmodel import recommend_destinations
 
 
 router = APIRouter(prefix="/recommend")
@@ -25,4 +27,9 @@ async def get_recommend_schedule(
     if not user:
         raise UserNotFoundExceiption()
 
-    return user
+    recommendations = recommend_destinations(userId)
+
+    if recommendations is None:
+        raise UserNotFoundExceiption()
+
+    return recommendations

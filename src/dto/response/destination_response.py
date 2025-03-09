@@ -1,14 +1,34 @@
 from datetime import datetime
 from typing import Optional, Dict
 from pydantic import BaseModel
+import enum
 
+class DestinationType(enum.Enum):
+    """
+    1: 관광지, 2: 식당, 3: 쇼핑센터, 4: 숙박업소, 5: 대중교통
+    """
+    SIGHTSEEING = "1"
+    RESTAURANT = "2"
+    SHOPPING = "3"
+    ACCOMMODATION = "4"
+    TRANSPORT = "5"
+
+    def __str__(self):
+        mapping = {
+            "1": "관광",
+            "2": "식당",
+            "3": "쇼핑센터",
+            "4": "숙박업소",
+            "5": "대중교통"
+        }
+        return mapping[self.value]
 
 class DestinationResponse(BaseModel):
     id: int
 
-    # ToDo: Enum으로 교체
+    # ToDo: Enum으로 교체 -> 교체완료
     # 예: '1', '2' 등 문자형으로 저장된 경우
-    type: str
+    type: DestinationType
     kr_name: str
     loc_name: str
     title: str
@@ -31,6 +51,10 @@ class DestinationResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        # Enum -> description : 관광, 식당, ...
+        json_encoders = {
+            DestinationType: lambda v : str(v)
+        }
 
     @classmethod
     def from_orm_custom(cls, orm_obj):

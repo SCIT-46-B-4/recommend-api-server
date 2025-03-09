@@ -1,16 +1,16 @@
-from sqlalchemy import Column, Integer, BigInteger, String, DateTime, Numeric, JSON, ForeignKey, func
-from sqlalchemy.orm import relationship
+import enum
+from sqlalchemy import Column, Integer, BigInteger, String, DateTime, Numeric, JSON, ForeignKey, func, Enum
+from sqlalchemy.orm import relationship, reconstructor
 from geoalchemy2 import Geometry
 
 from src.db.base import Base
-
 
 class DestinationEntity(Base):
     __tablename__ = "destinations"
     
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     city_id = Column(Integer, ForeignKey("cities.id", ondelete="SET NULL"), nullable=True)
-    # ToDo: Enum으로 교체
+    # ToDo: Enum으로 교체 -> 교체완료
     # 1: 관광지, 2: 식당, 3: 쇼핑센터, 4: 숙박업소, 5: 대중교통
     type = Column(String(1), nullable=False)
     kr_name = Column(String(256), nullable=False)
@@ -34,3 +34,9 @@ class DestinationEntity(Base):
 
     city = relationship("CityEntity", back_populates="destinations", lazy="joined")
     routes = relationship("RouteEntity", back_populates="destination", cascade="all, delete-orphan", lazy="joined")
+
+
+
+
+
+
