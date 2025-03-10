@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, BigInteger, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 
-from src.db.base import Base
+from src.db.orm import Base
 
 
 class RouteEntity(Base):
@@ -17,4 +17,4 @@ class RouteEntity(Base):
     updated_at = Column(DateTime, nullable=True)
 
     destination = relationship("DestinationEntity", back_populates="routes", lazy="joined")
-    detail_schedule = relationship("DetailScheduleEntity", back_populates="routes", lazy="joined")
+    detail_schedule = relationship("DetailScheduleEntity", back_populates="routes")

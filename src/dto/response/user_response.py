@@ -1,10 +1,10 @@
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel
+
+from src.dto.base_model import ResponseBaseModel
 
 
-class UserResponse(BaseModel):
-    id: int
+class UserResponse(ResponseBaseModel):
     name: str
     nickname: str
     email: str
@@ -13,9 +13,14 @@ class UserResponse(BaseModel):
     is_agree_news_noti: bool
     is_agree_marketing_noti: bool
     join_date: datetime
-    updated_at: Optional[datetime] = None
     deleted_at: Optional[datetime] = None
     profile_img: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    @classmethod
+    def model_validate(cls, obj):
+        obj_dict = obj.__dict__.copy() if hasattr(obj, "__dict__") else obj.copy()
+
+        if "created_at" in obj_dict:
+            obj_dict["join_date"] = obj_dict.pop("created_at")
+
+        return cls.model_construct(**obj_dict)

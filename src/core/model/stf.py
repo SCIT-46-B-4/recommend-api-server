@@ -69,12 +69,14 @@ df_dest = pd.read_csv(dest_path, encoding='utf-8')
 df_users["combined_features"] = df_users.apply(combine_user_features, axis=1)
 df_dest["combined_features"] = df_dest.apply(lambda row: combine_dest_features(row), axis=1)
 
+# 시간이 오래 소요되는 파트 ~~
 # SentenceTransformer 모델 로드
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
 #사용자와 destination의 결합된 텍스트를 리스트로 추출하여 임베딩 생성
 user_embeddings = model.encode(df_users["combined_features"].tolist())
 dest_embeddings = model.encode(df_dest["combined_features"].tolist())
+# 시간이 오래 소요되는 파트 ~~
 
 # 결과는 (사용자수 x destination수) 형태의 행렬 / 코사인 유사도 계산
 similarity_matrix = cosine_similarity(user_embeddings, dest_embeddings)

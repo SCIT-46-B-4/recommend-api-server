@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, BigInteger, String, DateTime, Date, ForeignKey, func
 from sqlalchemy.orm import relationship
 
-from src.db.base import Base
+from src.db.orm import Base
 
 
 class ScheduleEntity(Base):

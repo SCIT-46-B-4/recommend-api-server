@@ -1,9 +1,9 @@
-import enum
-from sqlalchemy import Column, Integer, BigInteger, String, DateTime, Numeric, JSON, ForeignKey, func, Enum
-from sqlalchemy.orm import relationship, reconstructor
+from sqlalchemy import Column, Integer, BigInteger, String, DateTime, Numeric, JSON, ForeignKey, func
+from sqlalchemy.orm import relationship
 from geoalchemy2 import Geometry
 
-from src.db.base import Base
+from src.db.orm import Base
+
 
 class DestinationEntity(Base):
     __tablename__ = "destinations"
@@ -33,10 +33,4 @@ class DestinationEntity(Base):
     coordinate = Column(Geometry(geometry_type="POINT", srid=4326), nullable=False)
 
     city = relationship("CityEntity", back_populates="destinations", lazy="joined")
-    routes = relationship("RouteEntity", back_populates="destination", cascade="all, delete-orphan", lazy="joined")
-
-
-
-
-
-
+    routes = relationship("RouteEntity", back_populates="destination", cascade="all, delete-orphan")

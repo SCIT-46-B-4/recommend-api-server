@@ -1,14 +1,15 @@
 import os
 import urllib
 
+from typing import AsyncGenerator
+
 from dotenv import load_dotenv
-from sqlalchemy import Engine, create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 load_dotenv()
 
-DB_USERNAME: str = os.getenv("DB_USERNAME", "scit")
-DB_PASSWORD: str = os.getenv("DB_PASSWORD", "scit")
+DB_USERNAME: str = os.getenv("DB_USERNAME", "root")
+DB_PASSWORD: str = os.getenv("DB_PASSWORD", "root")
 DB_HOST: str = os.getenv("DB_HOST", "127.0.0.1")
 DB_NAME: str = os.getenv("DB_NAME", "")
 DB_PORT: str = os.getenv("DB_PORT", "3306")
@@ -20,14 +21,22 @@ if not DB_NAME:
 # 비밀번호 특수문자 허용
 encoded_password = urllib.parse.quote_plus(DB_PASSWORD)
 
-DATABASE_URL: str = f"mysql+pymysql://{DB_USERNAME}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+DATABASE_URL: str = f"mysql+asyncmy://{DB_USERNAME}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
-engine: Engine = create_engine(DATABASE_URL, echo=DB_ECHO)
-SessionFactory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine: AsyncEngine = create_async_engine(
+    DATABASE_URL,
+    echo=DB_ECHO,
+    pool_size=10,
+    max_overflow=0,
+    pool_timeout=30, # second
+    pool_recycle=60,  # second
+    pool_pre_ping=True,
+)
+SessionFactory = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-async def get_db():
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     session = SessionFactory()
     try:
         yield session
     finally:
-        session.close()
+        await session.close()
