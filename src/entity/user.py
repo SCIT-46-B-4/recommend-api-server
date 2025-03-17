@@ -1,7 +1,7 @@
 from sqlalchemy import Column, BigInteger, String, DateTime, Boolean, func
 from sqlalchemy.orm import relationship
 
-from src.db.base import Base
+from src.db.orm import Base
 
 
 class UserEntity(Base):
@@ -21,5 +21,4 @@ class UserEntity(Base):
     deleted_at = Column(DateTime, nullable=True)
     profile_img = Column(String(512), nullable=True, default="default_profile_img_url")
 
-    schedules = relationship("ScheduleEntity", back_populates="user", cascade="all, delete-orphan", lazy="joined")
-
+    schedules = relationship("ScheduleEntity", back_populates="user", cascade="all, delete-orphan")

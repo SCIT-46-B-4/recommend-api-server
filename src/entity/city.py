@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func
 from sqlalchemy.orm import relationship
 
-from src.db.base import Base
+from src.db.orm import Base
 
 
 class CityEntity(Base):
@@ -16,5 +16,5 @@ class CityEntity(Base):
     updated_at = Column(DateTime, nullable=True)
 
     country = relationship("CountryEntity", back_populates="cities", lazy="joined")
-    destinations = relationship("DestinationEntity", back_populates="city", passive_deletes=True, lazy="joined")
-    schedules = relationship("ScheduleEntity", back_populates="city", passive_deletes=True, lazy="joined")
+    destinations = relationship("DestinationEntity", back_populates="city", passive_deletes=True)
+    schedules = relationship("ScheduleEntity", back_populates="city", passive_deletes=True)

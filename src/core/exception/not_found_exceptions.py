@@ -1,4 +1,4 @@
-from fastapi import (HTTPException, status)
+from fastapi import HTTPException, status
 
 
 class NotFoundException(HTTPException):
@@ -6,5 +6,5 @@ class NotFoundException(HTTPException):
         super().__init__(status_code, detail)
 
 class UserNotFoundExceiption(NotFoundException):
-    def __init__(self, status_code=status.HTTP_404_NOT_FOUND, detail: str="User Not Found"):
-        super().__init__(status_code, detail)
+    def __init__(self, detail: str="User Not Found"):
+        super().__init__(detail=detail)

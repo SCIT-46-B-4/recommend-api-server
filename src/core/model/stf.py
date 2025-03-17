@@ -17,6 +17,7 @@ user_path = os.path.join(data_dir, "exuser_cleaned.csv")
 # 사용자 정보 로드
 df_users = pd.read_csv(user_path, encoding='utf-8')
 
+# 시간이 오래 소요되는 파트 ~~
 # SentenceTransformer 모델 로드
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 

@@ -1,7 +1,8 @@
-from datetime import datetime
-from typing import Optional, Dict
-from pydantic import BaseModel
+from typing import Dict
 import enum
+from typing import Dict
+
+from src.dto.base_model import ResponseBaseModel
 
 class DestinationType(enum.Enum):
     """
@@ -23,38 +24,35 @@ class DestinationType(enum.Enum):
         }
         return mapping[self.value]
 
-class DestinationResponse(BaseModel):
-    id: int
-
-    # ToDo: Enum으로 교체 -> 교체완료
+class DestinationResponse(ResponseBaseModel):
+    # ToDo: Enum으로 교체
     # 예: '1', '2' 등 문자형으로 저장된 경우
     type: DestinationType
     kr_name: str
     loc_name: str
     title: str
     content: str
-    address: Optional[str] = None
-    contact: Optional[str] = None
-    homepage: Optional[str] = None
+    address: str | None = None
+    contact: str | None = None
+    homepage: str | None = None
+    address: str | None = None
+    contact: str | None = None
+    homepage: str | None = None
     how_to_go: str
-    available_time: Optional[str] = None
-    feature: Optional[Dict] = None
+    available_time: str | None = None
+    feature: Dict | None = None
+    available_time: str | None = None
+    feature: Dict | None = None
     score: float
-    title_img: Optional[str] = None
+    title_img: str | None = None
+    title_img: str | None = None
 
-    coordinate: Optional[str] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
-        # Enum -> description : 관광, 식당, ...
-        json_encoders = {
-            DestinationType: lambda v : str(v)
-        }
+    coordinate: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    coordinate: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
 
     @classmethod
     def from_orm_custom(cls, orm_obj):

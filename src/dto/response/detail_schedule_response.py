@@ -1,18 +1,11 @@
-from datetime import datetime, date
-from pydantic import BaseModel
-from typing import List, Optional
+from datetime import date
+from typing import List
 
 from src.dto.response.route_response import RouteResponse
+from src.dto.base_model import ResponseBaseModel
 
 
-class DetailScheduleResponse(BaseModel):
-    id: int
+class DetailScheduleResponse(ResponseBaseModel):
     date: date
 
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-    route: List[RouteResponse] = []
-
-    class Config:
-        from_attributes = True
+    routes: List[RouteResponse] = []
