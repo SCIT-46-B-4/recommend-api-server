@@ -28,28 +28,12 @@ class DestinationResponse(ResponseBaseModel):
     # ToDo: Enum으로 교체
     # 예: '1', '2' 등 문자형으로 저장된 경우
     type: DestinationType
+    id: int
     kr_name: str
-    loc_name: str
     title: str
     content: str
-    address: str | None = None
-    contact: str | None = None
-    homepage: str | None = None
-    address: str | None = None
-    contact: str | None = None
-    homepage: str | None = None
-    how_to_go: str
-    available_time: str | None = None
-    feature: Dict | None = None
-    available_time: str | None = None
-    feature: Dict | None = None
-    score: float
-    title_img: str | None = None
     title_img: str | None = None
 
-    coordinate: str | None = None
-    latitude: float | None = None
-    longitude: float | None = None
     coordinate: str | None = None
     latitude: float | None = None
     longitude: float | None = None

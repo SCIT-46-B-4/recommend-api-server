@@ -6,7 +6,7 @@ from src.db.orm import Base
 
 class CityEntity(Base):
     __tablename__ = "cities"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     country_id = Column(Integer, ForeignKey("countries.id", ondelete="SET NULL"))
     kr_name = Column(String(64), nullable=True)

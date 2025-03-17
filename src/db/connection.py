@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 load_dotenv()
 
-DB_USERNAME: str = os.getenv("DB_USERNAME", "root")
-DB_PASSWORD: str = os.getenv("DB_PASSWORD", "root")
+DB_USERNAME: str = os.getenv("DB_USERNAME", "scit")
+DB_PASSWORD: str = os.getenv("DB_PASSWORD", "scit")
 DB_HOST: str = os.getenv("DB_HOST", "127.0.0.1")
 DB_NAME: str = os.getenv("DB_NAME", "")
 DB_PORT: str = os.getenv("DB_PORT", "3306")
