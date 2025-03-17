@@ -1,20 +1,110 @@
 [
     {
         "user_id": "user_001",
-        "region": "1",
-        "travel_duration": "2박 3일",
-        "companion": ["가족과 함께", "부모님과 함께"],
-        "travel_style": ["문화", "휴양", "모험"],
-        "transport": "대중교통 위주",
-        "schedule_style": "여유로운 일정 선호"
+        "region": "tokyo",
+        "travel_duration": "3n4d",
+        "companion": ["kid", "parents"],
+        "travel_style": ["culture", "nature", "experience"],
+        "transport": "public",
+        "schedule_style": "tight"
     },
     {
         "user_id": "user_002",
-        "region": "2",
-        "travel_duration": "1박 2일",
-        "companion": ["연인과 함께", "친구와 함께"],
-        "travel_style": ["휴양", "맛집"],
-        "transport": "렌터카 위주",
-        "schedule_style": "빼곡한 일정 선호"
+        "region": "osaka",
+        "travel_duration": "1n2d",
+        "companion": ["couple", "friend"],
+        "travel_style": "culture",
+        "transport": "rental",
+        "schedule_style": "tight"
+    },
+    {
+        "user_id": "user_003",
+        "region": "fukuoka",
+        "travel_duration": "3n4d",
+        "companion": ["friend", "couple"],
+        "travel_style": ["shopping", "food"],
+        "transport": "public",
+        "schedule_style": "tight"
+    },
+    {
+        "user_id": "user_004",
+        "region": "tokyo",
+        "travel_duration": "4n5d",
+        "companion": ["spouse"],
+        "travel_style": ["healing", "sns"],
+        "transport": "walk",
+        "schedule_style": "relaxed"
+    },
+    {
+        "user_id": "user_005",
+        "region": "osaka",
+        "travel_duration": "2n3d",
+        "companion": ["kid"],
+        "travel_style": ["culture", "experience", "nature"],
+        "transport": "walk",
+        "schedule_style": "tight"
+    },
+    {
+        "user_id": "user_006",
+        "region": "sapporo",
+        "travel_duration": "1n2d",
+        "companion": ["parents", "kid"],
+        "travel_style": ["nature", "famous"],
+        "transport": "taxi",
+        "schedule_style": "relaxed"
+    },
+    {
+        "user_id": "user_007",
+        "region": "fukuoka",
+        "travel_duration": "5n6d",
+        "companion": ["couple", "other"],
+        "travel_style": ["shopping", "sns", "experience"],
+        "transport": "bike",
+        "schedule_style": "tight"
+    },
+    {
+        "user_id": "user_008",
+        "region": "tokyo",
+        "travel_duration": "2n3d",
+        "companion": ["friend", "couple"],
+        "travel_style": ["healing", "food", "shopping"],
+        "transport": "flexible",
+        "schedule_style": "relaxed"
+    },
+    {
+        "user_id": "user_009",
+        "region": "sapporo",
+        "travel_duration": "3n4d",
+        "companion": ["kid"],
+        "travel_style": ["culture", "experience", "nature"],
+        "transport": "public",
+        "schedule_style": "tight"
+    },
+    {
+        "user_id": "user_010",
+        "region": "osaka",
+        "travel_duration": "1n2d",
+        "companion": ["spouse"],
+        "travel_style": ["shopping", "food", "sns"],
+        "transport": "public",
+        "schedule_style": "relaxed"
+    },
+    {
+        "user_id": "user_011",
+        "region": "tokyo",
+        "travel_duration": "2n3d",
+        "companion": ["friend", "other"],
+        "travel_style": ["famous", "sns"],
+        "transport": "walk",
+        "schedule_style": "tight"
+    },
+    {
+        "user_id": "user_012",
+        "region": "fukuoka",
+        "travel_duration": "4n5d",
+        "companion": ["parents"],
+        "travel_style": ["culture", "nature", "shopping"],
+        "transport": "public",
+        "schedule_style": "relaxed"
     }
 ]
