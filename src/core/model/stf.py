@@ -22,7 +22,7 @@ def stf():
     def combine_user_features(row):
         companion_text = " ".join(row["companion"]) if isinstance(row["companion"], list) else row["companion"]
         travel_style_text = " ".join(row["travel_style"]) if isinstance(row["travel_style"], list) else row["travel_style"]
-        return f"{row['region']} {row['travel_duration']} {companion_text} {travel_style_text} {row['transport']} {row['schedule_style']}"
+        return f"{row['city']} {row['period']} {companion_text} {travel_style_text} {row['transport']} {row['schedule_style']}"
 
     # 여행지의 feature 결합
     def combine_dest_features(row):
@@ -60,12 +60,13 @@ def stf():
     user_id = df_users.iloc[0]["user_id"]
     user_row = df_users[df_users["user_id"] == user_id].iloc[0]
 
-    user_region = int(user_row["region"])
+    user_city = int(user_row["city"])
     num_days = int(user_row["day"])
     recommendations = {}
 
     # SentenceTransformer 모델 로드
     model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    user_feature = combine_user_features(user_row)
     user_embedding = model.encode([user_feature])
 
     for day in range(1, num_days + 1):
@@ -84,13 +85,12 @@ def stf():
         else:
             continue
 
-        # 사용자의 region_id와 일치하는 city_id만 필터링
-        filtered_dest = df_dest[(df_dest["city_id"] == user_region) & (df_dest[f"cluster_{day}"] == user_cluster)]
+        # 사용자의 city_id와 일치하는 city_id만 필터링
+        filtered_dest = df_dest[(df_dest["city_id"] == user_city) & (df_dest[f"cluster_{day}"] == user_cluster)]
 
         if filtered_dest.empty:
             continue
 
-        user_feature = combine_user_features(user_row)
         filtered_dest["combined_features"] = filtered_dest.apply(lambda row: combine_dest_features(row), axis=1)
 
         # SentenceTransformer 임베딩 생성
@@ -136,7 +136,7 @@ def stf():
                 "title": str(filtered_dest.iloc[j]["title"]),
                 "content": str(filtered_dest.iloc[j]["content"]),
                 "address": str(filtered_dest.iloc[j]["address"]),
-                "city": dict(filtered_dest.iloc[j]["city"]),
+                "city": filtered_dest.iloc[j]["city"],
                 "type" : dest_type,
                 "latitude" : float(filtered_dest.iloc[j]["latitude"]),
                 "longitude" : float(filtered_dest.iloc[j]["longitude"]),
@@ -167,7 +167,7 @@ def stf():
                     "title": str(extra["title"]),
                     "content": str(extra["content"]),
                     "address": str(extra["address"]),
-                    "city": dict(extra["city"]),
+                    "city": extra["city"],
                     "type": int(extra["type"]),
                     "latitude": float(extra["latitude"]),
                     "longitude": float(extra["longitude"]),

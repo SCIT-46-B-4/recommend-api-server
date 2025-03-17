@@ -9,7 +9,7 @@ def user_preprocessing(survey):
     data_dir = os.path.join(base_dir, "data")
 
     # Mapping
-    region_mapping = {
+    city_mapping = {
         "tokyo" : 1,
         "osaka" : 2,
         "fukuoka" : 3,
@@ -34,19 +34,20 @@ def user_preprocessing(survey):
         "other" : "기타",
     }
 
-    travel_style_mapping = {
+    travelStyle_mapping = {
         "experience" : "체험/액티비티",
         "sns" : "SNS 핫플레이스",
         "nature" : "자연",
         "famous" : "유명 관광지는 필수",
         "healing" : "여유롭게 힐링",
         "culture" : "문화/예술/역사",
+        "local": "여행지 느낌 물씬",
         "shopping" : "쇼핑은 열정적",
         "food" : "먹방",
     }
 
     # 일정의 개수를 지정. relaxed 5, tight 7
-    schedule_style_mapping = {
+    scheduleStyle_mapping = {
         "tight" : 7,
         "relaxed" : 5
     }
@@ -55,16 +56,17 @@ def user_preprocessing(survey):
     def map_values(value, mapping):
         if isinstance(value, list):
             mapped_values = [mapping.get(v, v) for v in value]
-            return mapped_values if len(mapped_values) > 1 else mapped_values[0]
+            return mapped_values
         return mapping.get(value, value)
 
-    survey["region"] = region_mapping.get(survey["region"], "알 수 없음")
+    survey["city"] = city_mapping.get(survey["city"], "알 수 없음")
     survey["transport"] = map_values(survey.get("transport", []), transport_mapping)
-    survey["travel_style"] = map_values(survey.get("travel_style", []), travel_style_mapping)
+    survey["travel_style"] = map_values(survey.get("travel_style", []), travelStyle_mapping)
     survey["companion"] = map_values(survey.get("companion", []), companion_mapping)
-    survey["schedule_style"] = schedule_style_mapping.get(survey["schedule_style"], "알 수 없음")
+    survey["schedule_style"] = scheduleStyle_mapping.get(survey["schedule_style"], "알 수 없음")
 
-    user_df = pd.DataFrame(survey)
+    user_df = pd.DataFrame([survey])
+
 
     # 리스트형 데이터 변환 함수
     def convert_to_list(value):
@@ -95,7 +97,7 @@ def user_preprocessing(survey):
             return None, None
         return None, None
 
-    user_df[["night", "day"]] = user_df["travel_duration"].apply(lambda x: pd.Series(split_travel_duration(x)))
+    user_df[["night", "day"]] = user_df["period"].apply(lambda x: pd.Series(split_travel_duration(x)))
 
     user_cleaned_filepath = os.path.join(data_dir, "preprecessed_user.csv")
 

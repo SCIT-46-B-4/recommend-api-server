@@ -22,12 +22,12 @@ def k_means() -> None:
     user_df = pd.read_csv(user_file_path, encoding='utf-8-sig')
 
     # User's region info
-    user_region = user_df.loc[0, 'region']
+    user_city = user_df.loc[0, 'city']
     num_nights = user_df.loc[0, 'night']
     num_days = user_df.loc[0, 'day']
 
     # filtering destinations
-    filtered_df = destinations_df[(destinations_df['city_id'] == user_region)]
+    filtered_df = destinations_df[(destinations_df['city_id'] == user_city)]
 
     # KMeans Clustering
     selected_acc = []
@@ -142,3 +142,6 @@ def k_means() -> None:
             data_path = os.path.join(pkl_dir, f'day_{day}.pkl')
             with open(data_path, 'wb') as data_file:
                 pickle.dump(df, data_file)
+
+if __name__ == "__main__":
+    k_means()

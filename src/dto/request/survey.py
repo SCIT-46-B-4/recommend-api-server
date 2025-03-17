@@ -15,9 +15,9 @@ class SurveyRequest(BaseModel):
     city: str
     period: str
     companion: List[str]
-    travelStyle: List[str]
+    travel_style: List[str]
     transport: List[str]
-    scheduleStyle: str
+    schedule_style: str
 
 """
 surveyDto: SurveyDto(

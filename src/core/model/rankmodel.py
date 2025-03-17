@@ -216,9 +216,8 @@ def ranking_model():
 
     # Step 0 df_combined : All data
     df_combined = merge_base_with_days(df_final_base, df_final_dest)
-
-    # print(tabulate(df_combined, headers="keys"))
-
+    df_combined.fillna(0, inplace=True)
+    print("##########")
     # 1. Xgboost Ranker 적용
 
     # 1.1 거리 / 점수(score)에 따른 가중치 조정
@@ -229,7 +228,6 @@ def ranking_model():
 
         # :param weight 가중치 : 해당 km이내에 존재하면 가중치 부여
         weight = 3
-
         results = []
 
         # Day별로 수행.
@@ -623,3 +621,6 @@ def ranking_model():
         schedule_response["detail_schedules"].append(detail_schedule)
 
     return schedule_response
+
+if __name__ == "__main__":
+    ranking_model()
