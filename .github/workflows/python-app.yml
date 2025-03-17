@@ -1,0 +1,50 @@
+name: Build and Push Python Docker Image to ECR
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Set up Python (For Recommend Service)
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'  # Python 버전 설정
+
+    - name: Install dependencies from requirements.txt
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt  # requirements.txt에서 의존성 설치
+
+    - name: Build Python Docker image (For Recommend Service)
+      run: |
+        # ECR repository URI 설정
+        AWS_ACCOUNT_ID=${{ secrets.AWS_ACCOUNT_ID }}
+        REGION=${{ secrets.AWS_REGION }}
+        REPOSITORY_NAME="recommend-service"
+        TAG=${{ secrets.IMAGE_TAG }}
+        REPOSITORY_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${REPOSITORY_NAME}:${TAG}"
+
+        # Docker 이미지 빌드 및 푸시
+        docker build -t $REPOSITORY_URI .
+        docker push $REPOSITORY_URI
