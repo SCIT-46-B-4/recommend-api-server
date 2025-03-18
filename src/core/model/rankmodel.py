@@ -197,6 +197,9 @@ def ranking_model():
         """
         df_final_base = preprocess_base(df_final_base)
 
+        # refetching
+        df_final_base = df_final_base.rename(columns={'dest_id': 'id'})
+
         # 원본 데이터와 합치기
         df_final_dest = pd.concat([df_final_dest, df_final_base], ignore_index=True)
 
@@ -364,8 +367,14 @@ def ranking_model():
         반환:
             itinerary_pattern 각 슬롯에 대응하는 후보 행(dict)들의 리스트
         """
+
+        # 후보 딕셔너리에서 "dest_id"가 존재하고 "id"가 없으면, "id"로 복사
+        def normalize_candidate(candidate):
+            if candidate is not None and "dest_id" in candidate and "id" not in candidate:
+                candidate["id"] = candidate["dest_id"]
+            return candidate
+
         schedule_result = []
-        # food_type_order 딕셔너리에서 현재 day_key에 해당하는 순서 리스트 추출 (예, ["음식점", "음식점"] 등)
         order_list = food_type_order.get(user_schedule_style, {}).get(day_key, [])
         food_index = 0
         total_four = itinerary_pattern.count(4)
@@ -374,34 +383,43 @@ def ranking_model():
         for slot in itinerary_pattern:
             if slot == 2:
                 candidate = None
-                # food 슬롯: order_list에 따른 우선순위로 후보 선택
                 if order_list:
                     target_food = order_list[food_index] if food_index < len(order_list) else order_list[-1]
+                    # classified에서 해당 food type 후보가 존재하는 경우
                     if 2 in classified and target_food in classified[2]:
-                        # 후보 목록에서 순차적으로 pop하여 used_places에 없는 항목 선택
                         while classified[2][target_food]:
                             idx = classified[2][target_food].pop(0)
                             candidate_candidate = df_user_day.loc[idx].to_dict()
-                            if candidate_candidate["dest_id"] not in used_places:
+                            candidate_candidate = normalize_candidate(candidate_candidate)
+                            if candidate_candidate["id"] not in used_places:
                                 candidate = candidate_candidate
                                 break
-                # fallback: 만약 candidate가 None이고, target_food가 '카페'인 경우,
-                # df_user_day 내에서 content가 "카페"인 다른 후보를 찾아봅니다.
-                if candidate is None and target_food == "카페":
+                # classified에서 후보가 없는 경우, 전체 df_user_day에서 type==2 및 content가 target_food인 행 검색
+                if candidate is None and order_list:
+                    target_food = order_list[food_index] if food_index < len(order_list) else order_list[-1]
+                    fallback_df = df_user_day[(df_user_day["type"] == 2) & (df_user_day["content"] == target_food)]
+                    for idx, row in fallback_df.iterrows():
+                        candidate_candidate = row.to_dict()
+                        candidate_candidate = normalize_candidate(candidate_candidate)
+                        if candidate_candidate["id"] not in used_places:
+                            candidate = candidate_candidate
+                            break
+                # 추가 fallback: target_food가 "카페"인 경우, classified나 일반 검색에서도 찾지 못하면
+                if candidate is None and order_list and order_list[food_index] == "카페":
                     fallback_df = df_user_day[df_user_day["content"] == "카페"]
                     for idx, row in fallback_df.iterrows():
-                        if row["dest_id"] not in used_places:
-                            candidate = row.to_dict()
+                        candidate_candidate = row.to_dict()
+                        candidate_candidate = normalize_candidate(candidate_candidate)
+                        if candidate_candidate["id"] not in used_places:
+                            candidate = candidate_candidate
                             break
-
                 schedule_result.append(candidate)
                 if candidate is not None:
-                    used_places.add(candidate["dest_id"])
+                    candidate = normalize_candidate(candidate)
+                    used_places.add(candidate["id"])
                 food_index += 1
 
             elif slot == 4:
-                # 숙박 슬롯: 만약 총 슬롯이 1개이면 current_accommodation,
-                # 여러 개면 첫 슬롯은 prev_accommodation, 마지막은 current_accommodation, 중간은 classified[4]에서 선택
                 four_count += 1
                 candidate = None
                 if total_four == 1:
@@ -416,49 +434,56 @@ def ranking_model():
                             while classified[4]:
                                 idx = classified[4].pop(0)
                                 candidate_candidate = df_user_day.loc[idx].to_dict()
-                                if candidate_candidate["dest_id"] not in used_places:
+                                candidate_candidate = normalize_candidate(candidate_candidate)
+                                if candidate_candidate["id"] not in used_places:
                                     candidate = candidate_candidate
                                     break
                 schedule_result.append(candidate)
                 if candidate is not None:
-                    used_places.add(candidate["dest_id"])
+                    candidate = normalize_candidate(candidate)
+                    used_places.add(candidate["id"])
+
 
             elif slot == 6:
                 candidate = None
-                # 우선 current_tourism 후보 (이미 사용되지 않은 경우)
-                if current_tourism is not None and current_tourism["dest_id"] not in used_places:
-                    candidate = current_tourism
-                # 그 다음 classified에서 type 6 후보 선택 (used_places 체크)
+                if current_tourism is not None:
+                    current_tourism = normalize_candidate(current_tourism)
+                    if current_tourism["id"] not in used_places:
+                        candidate = current_tourism
                 if candidate is None and 6 in classified and classified[6]:
                     while classified[6]:
                         idx = classified[6].pop(0)
                         candidate_candidate = df_user_day.loc[idx].to_dict()
-                        if candidate_candidate["dest_id"] not in used_places:
+                        candidate_candidate = normalize_candidate(candidate_candidate)
+                        if candidate_candidate["id"] not in used_places:
                             candidate = candidate_candidate
                             break
-                # fallback: df_user_day에서 type==6 행 중 used_places에 없는 항목 탐색
                 if candidate is None:
                     for idx, r in df_user_day[df_user_day["type"] == 6].iterrows():
-                        if r["dest_id"] not in used_places:
-                            candidate = r.to_dict()
+                        candidate_candidate = r.to_dict()
+                        candidate_candidate = normalize_candidate(candidate_candidate)
+                        if candidate_candidate["id"] not in used_places:
+                            candidate = candidate_candidate
                             break
                 schedule_result.append(candidate)
                 if candidate is not None:
-                    used_places.add(candidate["dest_id"])
+                    candidate = normalize_candidate(candidate)
+                    used_places.add(candidate["id"])
 
             else:
-                # 그 외 슬롯: 해당 type의 후보를 classified에서 순차적으로 선택 (used_places 체크)
                 candidate = None
                 if slot in classified and classified[slot]:
                     while classified[slot]:
                         idx = classified[slot].pop(0)
                         candidate_candidate = df_user_day.loc[idx].to_dict()
-                        if candidate_candidate["dest_id"] not in used_places:
+                        candidate_candidate = normalize_candidate(candidate_candidate)
+                        if candidate_candidate["id"] not in used_places:
                             candidate = candidate_candidate
                             break
                 schedule_result.append(candidate)
                 if candidate is not None:
-                    used_places.add(candidate["dest_id"])
+                    candidate = normalize_candidate(candidate)
+                    used_places.add(candidate["id"])
         return schedule_result
 
     def map_food_type_slots(classified, food_type_order, user_schedule_style, day_key, df_user_day):
@@ -477,6 +502,7 @@ def ranking_model():
         # order_list에 해당하는 food type 순서를 가져옵니다.
         order_list = food_type_order.get(user_schedule_style, {}).get(day_key, [])
         result = []
+
         # classified가 type 2 항목을 포함하지 않으면 빈 리스트 반환
         if 2 not in classified:
             return result
@@ -540,7 +566,6 @@ def ranking_model():
             # 장소 분류 (type 값 기반)
             categorized = classify_df_user_day_by_type(df_day)
 
-
             # 이전날/다음날 숙박지 설정
             current_accommodation = None  # Day1에 적용할 숙박지
             prev_accommodation = None
@@ -565,7 +590,7 @@ def ranking_model():
             # 사용된 장소 업데이트
             for cand in itinerary_list:
                 if cand is not None:
-                    used_places.add(cand["dest_id"])
+                    used_places.add(cand["id"])
 
             # 최종 일정은 day별로 저장 (user_id 단계 없이)
             final_schedule[day] = itinerary_list
@@ -593,7 +618,7 @@ def ranking_model():
         # 각 일정(루트)을 순서대로 RouteResponse에 맞게 변환
         for order_number, route_item in enumerate(user_schedule, start=1):
             destination = {
-                "id": route_item.get("dest_id"),
+                "id": route_item.get("id"),
                 "type": route_item.get("type"),
                 "kr_name": route_item.get("name"),
                 "title": route_item.get("title"),
@@ -610,6 +635,3 @@ def ranking_model():
         schedule_response["detail_schedules"].append(detail_schedule)
 
     return schedule_response
-
-# if __name__ == "__main__":
-#     ranking_model()

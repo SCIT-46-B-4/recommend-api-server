@@ -168,7 +168,7 @@ def stf():
                     "title": str(extra["title"]),
                     "content": str(extra["content"]),
                     "address": str(extra["address"]),
-                    "city": extra["city"],
+                    "city": ast.literal_eval(extra["city"]),
                     "type": int(extra["type"]),
                     "latitude": float(extra["latitude"]),
                     "longitude": float(extra["longitude"]),

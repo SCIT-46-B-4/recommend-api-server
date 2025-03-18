@@ -12,7 +12,6 @@ from src.dto.request.survey import SurveyRequest
 from src.core.model.kmeans import k_means
 from src.core.exception import BadReqException, RequiredQueryParameterException
 from src.core.model.rankmodel import ranking_model
-from src.dto.response.schedule_response import ScheduleResponse
 from src.utils import convert_query_params
 
 
@@ -26,13 +25,9 @@ async def get_recommend_schedule(survey: SurveyRequest, params: Dict[str, str]=D
 
     survey = survey.model_dump()
     survey["user_id"] = int(user_id)
-    print("#################")
     user_preprocessing.user_preprocessing(survey)
-    print("@@@@@@@@@@@@@@@@@")
     k_means()
-    print("$$$$$$$$$$$$$$$$$$$")
     stf.stf()
-    print("^^^^^^^^^^^^^^^^^^^^^^^")
     recommendation = ranking_model()
     if recommendation is None:
         raise BadReqException()
