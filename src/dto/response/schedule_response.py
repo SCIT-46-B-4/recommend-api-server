@@ -7,13 +7,11 @@ from src.dto.response.detail_schedule_response import DetailScheduleResponse
 
 class ScheduleResponse(ResponseBaseModel):
     user_id: int
-    country_id: int | None = None
-    city_id: int | None = None
 
     name: str | None = None
-    start_date: date
-    end_date: date
-    country_name: str
-    city_name: str
+    city_id: int | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    city_name: str | None = None
 
     detail_schedules: List[DetailScheduleResponse] = []

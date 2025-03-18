@@ -1,10 +1,7 @@
-import numpy as np
 import pandas as pd
 import os
 from sklearn.cluster import KMeans
 import pickle
-import matplotlib.pyplot as plt
-import seaborn as sns
 from geopy.distance import geodesic
 from src.core.exception.bad_request_exceptions import BadReqException
 
@@ -13,7 +10,7 @@ def k_means() -> None:
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
     data_dir = os.path.join(base_dir, "data")
     dest_file_path = os.path.join(data_dir, "destinations_cleaned.csv")
-    user_file_path = os.path.join(data_dir, "preprecessed_user.csv")
+    user_file_path = os.path.join(data_dir, "preprocessed_user.csv")
 
     # PKL 저장 폴더 설정
     pkl_dir = os.path.join(base_dir, "pkl")
@@ -142,6 +139,3 @@ def k_means() -> None:
             data_path = os.path.join(pkl_dir, f'day_{day}.pkl')
             with open(data_path, 'wb') as data_file:
                 pickle.dump(df, data_file)
-
-if __name__ == "__main__":
-    k_means()

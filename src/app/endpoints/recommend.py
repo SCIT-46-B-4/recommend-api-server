@@ -26,11 +26,21 @@ async def get_recommend_schedule(survey: SurveyRequest, params: Dict[str, str]=D
 
     survey = survey.model_dump()
     survey["user_id"] = int(user_id)
+    print("#################")
     user_preprocessing.user_preprocessing(survey)
+    print("@@@@@@@@@@@@@@@@@")
     k_means()
+    print("$$$$$$$$$$$$$$$$$$$")
     stf.stf()
+    print("^^^^^^^^^^^^^^^^^^^^^^^")
     recommendation = ranking_model()
     if recommendation is None:
         raise BadReqException()
+
+    # recommendation["city_id"] = survey["city_id"]
+    # recommendation["start_date"] = survey["start_date"]
+    # recommendation["end_date"] = survey["end_date"]
+    # recommendation["city_name"] = survey["city"]
+
 
     return recommendation

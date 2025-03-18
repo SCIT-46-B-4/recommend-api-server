@@ -31,10 +31,8 @@ class DestinationResponse(ResponseBaseModel):
     id: int
     kr_name: str
     title: str
-    content: str
     title_img: str | None = None
 
-    coordinate: str | None = None
     latitude: float | None = None
     longitude: float | None = None
 

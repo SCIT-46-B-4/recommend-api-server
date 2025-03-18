@@ -7,7 +7,50 @@ import json
 import xgboost as xgb
 from geopy.distance import geodesic
 
+
 def ranking_model():
+    # file_path 지정
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+    pkl_dir = os.path.join(base_dir, "pkl")
+    data_dir = os.path.join(base_dir, "data")
+    base_info_path = os.path.join(pkl_dir, "base_info.pkl")
+    user_info_path = os.path.join(data_dir, "preprocessed_user.csv")
+
+    # Base info 로드 : 정상 동작 확인
+    with open(base_info_path, "rb") as data_file:
+        base_info = pickle.load(data_file)
+
+    # 딕셔너리를 DataFrame으로 변환
+    df_base = pd.DataFrame.from_dict(base_info, orient="index")
+
+    # json_normalize()를 사용하여 accommodation과 closest_place를 각각 풀어주기
+    df_accommodation = pd.json_normalize(df_base["accommodation"])
+    df_closest_place = pd.json_normalize(df_base["closest_place"])
+
+    # 컬럼명 변경 (충돌 방지)
+    df_accommodation = df_accommodation.add_prefix("accommodation_")
+    df_closest_place = df_closest_place.add_prefix("closest_place_")
+
+    # 최종적으로 두 개의 DataFrame을 병합
+    df_final_base = pd.concat([df_accommodation, df_closest_place], axis=1)
+
+    # stf에서 처리된 recommendations 파일를 로드
+    for file_name in os.listdir(data_dir):
+        if file_name.startswith("recommendations_") and file_name.endswith(".json"):
+            with open(os.path.join(data_dir, file_name), "r", encoding="utf-8") as file:
+                user_recs = json.load(file)
+
+    df_dest = []
+    for day, rec in user_recs.items():
+        df_day = pd.json_normalize(user_recs, record_path=[f"{day}"])
+        df_day["day"] = day
+        df_dest.append(df_day)
+
+    df_final_dest = pd.concat(df_dest, ignore_index=True)
+
+    # 사용자 일정 스타일 로드
+    user_info = pd.read_csv(user_info_path, encoding='utf-8')
+
     def classify_df_user_day_by_type(df_user_day):
         """
         Memory efficient 방식으로 df_user_day를 type별로 분류합니다.
@@ -38,81 +81,30 @@ def ranking_model():
                 categorized[t].append(idx)
         return categorized
 
-
-    # file_path 지정
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-    pkl_dir = os.path.join(base_dir, "pkl")
-    data_dir = os.path.join(base_dir, "data")
-    base_info_path = os.path.join(pkl_dir, "base_info.pkl")
-    user_info_path = os.path.join(data_dir, "exuser_cleaned.csv")
-
-    # Base info 로드 : 정상 동작 확인
-    with open(base_info_path, "rb") as data_file:
-        base_info = pickle.load(data_file)
-
-    # 딕셔너리를 DataFrame으로 변환
-    df_base = pd.DataFrame.from_dict(base_info, orient="index")
-
-    # json_normalize()를 사용하여 accommodation과 closest_place를 각각 풀어주기
-    df_accommodation = pd.json_normalize(df_base["accommodation"])
-    df_closest_place = pd.json_normalize(df_base["closest_place"])
-
-    # 컬럼명 변경 (충돌 방지)
-    df_accommodation = df_accommodation.add_prefix("accommodation_")
-    df_closest_place = df_closest_place.add_prefix("closest_place_")
-
-    # 최종적으로 두 개의 DataFrame을 병합
-    df_final_base = pd.concat([df_accommodation, df_closest_place], axis=1)
-
-    # print(tabulate(df_accommodation, headers="keys", tablefmt="fancy_grid"))
-    # print(tabulate(df_closest_place, headers="keys", tablefmt="fancy_grid"))
-    # print(tabulate(df_final_base, headers="keys", tablefmt="fancy_grid"))
-
-    # stf에서 처리된 recommendations 파일를 로드
-    recommendations = {}
-    for file_name in os.listdir(data_dir):
-        if file_name.startswith("recommendations") and file_name.endswith(".json"):
-            with open(os.path.join(data_dir, file_name), "r", encoding="utf-8") as file:
-                user_recs = json.load(file)
-
-    df_dest = []
-    for day, rec in user_recs.items():
-        df_day = pd.json_normalize(user_recs, record_path=[f"{day}"])
-        df_day["day"] = day
-        df_dest.append(df_day)
-
-    df_final_dest = pd.concat(df_dest, ignore_index=True)
-    # print(tabulate(df_final_dest, headers="keys", tablefmt="fancy_grid"))
-
-    # 사용자 일정 스타일 로드
-    user_info = pd.read_csv(user_info_path, encoding='utf-8')
-    mapping_user_style = dict(zip(user_info["user_id"], user_info["schedule_style"]))
-
-    # TODO : 일정 패턴 적용, user schedule_style에 따라 개수 조정, Nan값으로 되어있는 값들.
     # 2. 일정 패턴에 따른 일정 구성
     # 일정 패턴 정의
     itinerary = {
-        5 : {
-            "first_day" : [6, 2, 6, 2, 4],  # "관광지", "식당", "관광지", "식당", "숙박지"
+        5: {
+            "first_day": [6, 2, 6, 2, 4],  # "관광지", "식당", "관광지", "식당", "숙박지"
             # 앞의 숙박지 : day1의 숙박지 -> 뒤의 숙박지 : day2의 숙박지.
-            "middle_day" : [4, 2, 6, 2, 4], # "숙박지", "식당", "관광지", "식당", "숙박지"
-            "last_day" : [4, 6, 2, 2] # "숙박지", "관광지", "식당", "식당(카페)"
-            },
-        7 : {
-            "first_day" : [6, 2, 6, 2, 2, 4],  # "관광지", "식당", "식당(카페)", "관광지","식당(이자카야)", "숙박지"
+            "middle_day": [4, 2, 6, 2, 4],  # "숙박지", "식당", "관광지", "식당", "숙박지"
+            "last_day": [4, 6, 2, 2]  # "숙박지", "관광지", "식당", "식당(카페)"
+        },
+        7: {
+            "first_day": [6, 2, 6, 2, 2, 4],  # "관광지", "식당", "식당(카페)", "관광지","식당(이자카야)", "숙박지"
             # 앞의 숙박지 : day1의 숙박지 -> 뒤의 숙박지 : day2의 숙박지.
-            "middle_day" : [4, 6, 2, 2, 6, 2, 4], # "숙박지", "관광지", "식당", "식당(카페)", "관광지", "식당(이자카야)", "숙박지"
-            "last_day" : [4, 6, 2, 6, 2] # "숙박지", "관광지", "식당", "관광지", "식당(카페)"
+            "middle_day": [4, 6, 2, 2, 6, 2, 4],  # "숙박지", "관광지", "식당", "식당(카페)", "관광지", "식당(이자카야)", "숙박지"
+            "last_day": [4, 6, 2, 6, 2]  # "숙박지", "관광지", "식당", "관광지", "식당(카페)"
         }
     }
 
     food_type_order = {
-        5 : {
+        5: {
             "first_day": ["음식점", "음식점"],
             "middle_day": ["음식점", "음식점"],
             "last_day": ["음식점", "카페"]
-            },
-        7 : {
+        },
+        7: {
             "first_day": ["음식점", "카페", "이자카야"],
             "middle_day": ["음식점", "카페", "이자카야"],
             "last_day": ["음식점", "카페"]
@@ -217,7 +209,7 @@ def ranking_model():
     # Step 0 df_combined : All data
     df_combined = merge_base_with_days(df_final_base, df_final_dest)
     df_combined.fillna(0, inplace=True)
-    print("##########")
+
     # 1. Xgboost Ranker 적용
 
     # 1.1 거리 / 점수(score)에 따른 가중치 조정
@@ -238,7 +230,6 @@ def ranking_model():
             accommodation = df_day[df_day["type"] == 4]
 
             if accommodation.empty:
-                print(f"⚠ Warning: No accommodation found for {day}. Skipping distance calculation.")
                 df_day["distance"] = np.nan
                 df_day["ranked_score"] = df_day["final_score"] * df_day["score"]
                 results.append(df_day)
@@ -275,7 +266,6 @@ def ranking_model():
         for day in df_combined["day"].unique():
             # Day에 해당하는 데이터만 추출
             df_day = df_combined[df_combined["day"] == day].copy()
-            print(f"Processing day {day}, number of records: {len(df_day)}")
 
             if df_day.empty:
                 print(f"distance_weight() returned None for day {day}, skipping.")
@@ -289,7 +279,7 @@ def ranking_model():
             y = df_day["ranked_score"].values
 
             # ranked_score가 Nan이나 결측치일 경우 1.0으로 변환
-            y = np.nan_to_num(y , nan=1.0, posinf=1.0, neginf=1.0)
+            y = np.nan_to_num(y, nan=1.0, posinf=1.0, neginf=1.0)
 
             data.append(x)
             labels.append(y)
@@ -325,7 +315,7 @@ def ranking_model():
             "lambda": 10
 
         }
-        num_round = 200
+        num_round = 150
         model = xgb.train(params, dtrain, num_round)
 
         model_path = os.path.join(pkl_dir, "xgb_rank_model.pkl")
@@ -355,7 +345,6 @@ def ranking_model():
             ranked_result[day] = df_day
 
         return ranked_result
-
 
     def map_itinerary_slots(classified, itinerary_pattern, food_type_order, user_schedule_style, day_key, df_user_day,
                             prev_accommodation, current_accommodation, current_tourism, used_places):
@@ -472,7 +461,6 @@ def ranking_model():
                     used_places.add(candidate["dest_id"])
         return schedule_result
 
-
     def map_food_type_slots(classified, food_type_order, user_schedule_style, day_key, df_user_day):
         """
         classified: classify_df_user_day_by_type의 결과 (예, {2: {'음식점': [indices,...], '카페': [...], ...}, 4: [...], 6: [...]})
@@ -485,7 +473,7 @@ def ranking_model():
                 예를 들어, order_list가 ["음식점", "음식점"]이면, classified["2"]["음식점"]에서 순서대로 인덱스 0번, 1번을 pop하여 해당 행 dict로 반환.
                 만약 후보가 부족하면 None을 반환.
         """
-        # TODO : 중복 제거 및 빈 리스트에 대한 처리.
+
         # order_list에 해당하는 food type 순서를 가져옵니다.
         order_list = food_type_order.get(user_schedule_style, {}).get(day_key, [])
         result = []
@@ -552,6 +540,7 @@ def ranking_model():
             # 장소 분류 (type 값 기반)
             categorized = classify_df_user_day_by_type(df_day)
 
+
             # 이전날/다음날 숙박지 설정
             current_accommodation = None  # Day1에 적용할 숙박지
             prev_accommodation = None
@@ -600,7 +589,7 @@ def ranking_model():
             "day": day_num,
             "routes": []
         }
-        
+
         # 각 일정(루트)을 순서대로 RouteResponse에 맞게 변환
         for order_number, route_item in enumerate(user_schedule, start=1):
             destination = {
@@ -610,17 +599,17 @@ def ranking_model():
                 "title": route_item.get("title"),
                 "title_img": route_item.get("title_img"),
             }
-            
+
             route = {
                 "order_number": order_number,
                 "destination": destination
             }
-            
+
             detail_schedule["routes"].append(route)
-        
+
         schedule_response["detail_schedules"].append(detail_schedule)
 
     return schedule_response
 
-if __name__ == "__main__":
-    ranking_model()
+# if __name__ == "__main__":
+#     ranking_model()

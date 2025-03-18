@@ -1,3 +1,4 @@
+import ast
 import json
 import pickle
 import pandas as pd
@@ -6,14 +7,13 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 
-
 def stf():
     # file_path 지정
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
     data_dir = os.path.join(base_dir, "data")
     pkl_dir = os.path.join(base_dir, "pkl")
 
-    user_path = os.path.join(data_dir, "preprecessed_user.csv")
+    user_path = os.path.join(data_dir, "preprocessed_user.csv")
 
     # 사용자 정보 로드
     df_users = pd.read_csv(user_path, encoding='utf-8')
@@ -126,6 +126,7 @@ def stf():
         for j in top_indices:
             dest_id = int(filtered_dest.iloc[j]["id"])
             dest_type = int(filtered_dest.iloc[j]["type"])
+            dest_city = ast.literal_eval(filtered_dest.iloc[j]["city"])
 
             if dest_type == 6 and dest_id in type_6_set:
                 continue
@@ -136,7 +137,7 @@ def stf():
                 "title": str(filtered_dest.iloc[j]["title"]),
                 "content": str(filtered_dest.iloc[j]["content"]),
                 "address": str(filtered_dest.iloc[j]["address"]),
-                "city": filtered_dest.iloc[j]["city"],
+                "city": dest_city,
                 "type" : dest_type,
                 "latitude" : float(filtered_dest.iloc[j]["latitude"]),
                 "longitude" : float(filtered_dest.iloc[j]["longitude"]),

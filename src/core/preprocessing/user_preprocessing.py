@@ -99,6 +99,6 @@ def user_preprocessing(survey):
 
     user_df[["night", "day"]] = user_df["period"].apply(lambda x: pd.Series(split_travel_duration(x)))
 
-    user_cleaned_filepath = os.path.join(data_dir, "preprecessed_user.csv")
+    user_cleaned_filepath = os.path.join(data_dir, "preprocessed_user.csv")
 
     user_df.to_csv(user_cleaned_filepath, index=False, encoding="utf-8-sig")
