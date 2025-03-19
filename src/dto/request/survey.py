@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List
 
 from pydantic import BaseModel, ConfigDict
@@ -13,19 +14,11 @@ class SurveyRequest(BaseModel):
     )
 
     city: str
+    city_id: int
     period: str
     companion: List[str]
     travel_style: List[str]
     transport: List[str]
     schedule_style: str
-
-"""
-surveyDto: SurveyDto(
-    city=tokyo, 
-    period=2n3d, 
-    companion=[couple, spouse], 
-    travelStyle=[experience, nature, food], 
-    transport=[public, flexible], 
-    scheduleStyle=relaxed
-)
-"""
+    start_date: date
+    end_date: date

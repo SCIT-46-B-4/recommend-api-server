@@ -9,9 +9,9 @@ class ScheduleResponse(ResponseBaseModel):
     user_id: int
 
     name: str | None = None
-    city_id: int | None = None
-    start_date: date | None = None
-    end_date: date | None = None
-    city_name: str | None = None
+    city_id: int
+    start_date: date
+    end_date: date
+    city_name: str
 
     detail_schedules: List[DetailScheduleResponse] = []

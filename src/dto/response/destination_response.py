@@ -1,7 +1,3 @@
-from typing import Dict
-import enum
-from typing import Dict
-
 from src.dto.base_model import ResponseBaseModel
 
 class DestinationResponse(ResponseBaseModel):

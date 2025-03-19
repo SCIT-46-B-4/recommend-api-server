@@ -1,17 +1,13 @@
-from datetime import datetime
-
-from fastapi import APIRouter, Depends
-
 from typing import Dict
 
 from fastapi import APIRouter, Depends, status
 
 from src.core.model import stf
-from src.core.preprocessing import user_preprocessing
-from src.dto.request.survey import SurveyRequest
+from src.core.preprocessing.user_preprocessing import user_preprocessing
 from src.core.model.kmeans import k_means
 from src.core.exception import BadReqException, RequiredQueryParameterException
 from src.core.model.rankmodel import ranking_model
+from src.dto.request.survey import SurveyRequest
 from src.dto.response import ScheduleResponse
 from src.utils import convert_query_params
 
@@ -25,8 +21,10 @@ async def get_recommend_schedule(survey: SurveyRequest, params: Dict[str, str]=D
         raise RequiredQueryParameterException("user id not given")
 
     survey = survey.model_dump()
+    city_name = survey["city"]
     survey["user_id"] = int(user_id)
-    user_preprocessing.user_preprocessing(survey)
+
+    user_preprocessing(survey)
     k_means()
     stf.stf()
     recommendation = ranking_model()
@@ -34,10 +32,9 @@ async def get_recommend_schedule(survey: SurveyRequest, params: Dict[str, str]=D
         raise BadReqException()
 
     recommendation["user_id"] = user_id
-    # recommendation["city_id"] = survey["city_id"]
-    # recommendation["start_date"] = survey["start_date"]
-    # recommendation["end_date"] = survey["end_date"]
-    # recommendation["city_name"] = survey["city"]
+    recommendation["city_id"] = survey["city_id"]
+    recommendation["start_date"] = survey["start_date"]
+    recommendation["end_date"] = survey["end_date"]
+    recommendation["city_name"] = city_name
 
     return ScheduleResponse.model_validate(recommendation)
-    # return recommendation
