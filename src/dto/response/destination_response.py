@@ -4,37 +4,21 @@ from typing import Dict
 
 from src.dto.base_model import ResponseBaseModel
 
-class DestinationType(enum.Enum):
-    """
-    1: 관광지, 2: 식당, 3: 쇼핑센터, 4: 숙박업소, 5: 대중교통
-    """
-    SIGHTSEEING = "1"
-    RESTAURANT = "2"
-    SHOPPING = "3"
-    ACCOMMODATION = "4"
-    TRANSPORT = "5"
-
-    def __str__(self):
-        mapping = {
-            "1": "관광",
-            "2": "식당",
-            "3": "쇼핑센터",
-            "4": "숙박업소",
-            "5": "대중교통"
-        }
-        return mapping[self.value]
-
 class DestinationResponse(ResponseBaseModel):
     # ToDo: Enum으로 교체
     # 예: '1', '2' 등 문자형으로 저장된 경우
-    type: DestinationType
+    type: str
     id: int
-    kr_name: str
+    kr_name: str | int
     title: str
-    title_img: str | None = None
+    title_img: str | int | None = None
+    city: dict[str, str] | None = None
 
     latitude: float | None = None
     longitude: float | None = None
+
+    class Config:
+        use_enum_values = True
 
     @classmethod
     def from_orm_custom(cls, orm_obj):

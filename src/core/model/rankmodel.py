@@ -1,3 +1,4 @@
+import math
 import pickle
 import pandas as pd
 import os
@@ -42,7 +43,7 @@ def ranking_model():
 
     df_dest = []
     for day, rec in user_recs.items():
-        df_day = pd.json_normalize(user_recs, record_path=[f"{day}"])
+        df_day = pd.DataFrame(rec)
         df_day["day"] = day
         df_dest.append(df_day)
 
@@ -130,6 +131,7 @@ def ranking_model():
                 "day": f"day_{str(day)}",
                 "dest_id": base_row["accommodation_id"],
                 "city_id": base_row["accommodation_city_id"],
+                "city": base_row.get("city") if base_row.get("city") is not None else {"kr_name": "도쿄"},
                 "type": base_row["accommodation_type"],
                 "name": base_row["accommodation_kr_name"],
                 "loc_name": base_row["accommodation_loc_name"],
@@ -159,6 +161,7 @@ def ranking_model():
                 "day": f"day_{day}",
                 "dest_id": base_row["closest_place_id"],
                 "city_id": base_row["closest_place_city_id"],
+                "city": base_row.get("city") if base_row.get("city") is not None else {"kr_name": "도쿄"},
                 "type": base_row["closest_place_type"],
                 "name": base_row["closest_place_kr_name"],
                 "loc_name": base_row["closest_place_loc_name"],
@@ -188,7 +191,10 @@ def ranking_model():
                             col.startswith("accommodation_") or col.startswith("closest_place_")]
             df_extra_row.drop(columns=cols_to_drop, inplace=True)
 
+            df_extra_row["city.kr_name"] = df_extra_row["city"].apply(lambda x: x.get("kr_name") if isinstance(x, dict) else None)
+
         return df_extra_row
+
 
     # 0. df_final_base와 df_final_dest를 병합 : Clear
     def merge_base_with_days(df_final_base, df_final_dest):
@@ -211,8 +217,8 @@ def ranking_model():
 
     # Step 0 df_combined : All data
     df_combined = merge_base_with_days(df_final_base, df_final_dest)
-    df_combined.fillna(0, inplace=True)
 
+    df_combined = df_combined.apply(lambda col: np.nan_to_num(col, nan=0))
     # 1. Xgboost Ranker 적용
 
     # 1.1 거리 / 점수(score)에 따른 가중치 조정
@@ -394,7 +400,6 @@ def ranking_model():
                             if candidate_candidate["id"] not in used_places:
                                 candidate = candidate_candidate
                                 break
-                # classified에서 후보가 없는 경우, 전체 df_user_day에서 type==2 및 content가 target_food인 행 검색
                 if candidate is None and order_list:
                     target_food = order_list[food_index] if food_index < len(order_list) else order_list[-1]
                     fallback_df = df_user_day[(df_user_day["type"] == 2) & (df_user_day["content"] == target_food)]
@@ -404,7 +409,6 @@ def ranking_model():
                         if candidate_candidate["id"] not in used_places:
                             candidate = candidate_candidate
                             break
-                # 추가 fallback: target_food가 "카페"인 경우, classified나 일반 검색에서도 찾지 못하면
                 if candidate is None and order_list and order_list[food_index] == "카페":
                     fallback_df = df_user_day[df_user_day["content"] == "카페"]
                     for idx, row in fallback_df.iterrows():
@@ -413,22 +417,23 @@ def ranking_model():
                         if candidate_candidate["id"] not in used_places:
                             candidate = candidate_candidate
                             break
-                schedule_result.append(candidate)
+                # 후보가 없는 경우 해당 슬롯은 생략
                 if candidate is not None:
-                    candidate = normalize_candidate(candidate)
+                    schedule_result.append(candidate)
                     used_places.add(candidate["id"])
+                # 슬롯 처리 후 food_index 증가 (빈 슬롯은 추가하지 않음)
                 food_index += 1
 
             elif slot == 4:
                 four_count += 1
                 candidate = None
                 if total_four == 1:
-                    candidate = current_accommodation
+                    candidate = normalize_candidate(current_accommodation)
                 else:
                     if four_count == 1:
-                        candidate = prev_accommodation
+                        candidate = normalize_candidate(prev_accommodation)
                     elif four_count == total_four:
-                        candidate = current_accommodation
+                        candidate = normalize_candidate(current_accommodation)
                     else:
                         if 4 in classified and classified[4]:
                             while classified[4]:
@@ -440,16 +445,14 @@ def ranking_model():
                                     break
                 schedule_result.append(candidate)
                 if candidate is not None:
-                    candidate = normalize_candidate(candidate)
                     used_places.add(candidate["id"])
-
 
             elif slot == 6:
                 candidate = None
                 if current_tourism is not None:
-                    current_tourism = normalize_candidate(current_tourism)
-                    if current_tourism["id"] not in used_places:
-                        candidate = current_tourism
+                    candidate = normalize_candidate(current_tourism)
+                    if candidate["id"] in used_places:
+                        candidate = None
                 if candidate is None and 6 in classified and classified[6]:
                     while classified[6]:
                         idx = classified[6].pop(0)
@@ -467,7 +470,6 @@ def ranking_model():
                             break
                 schedule_result.append(candidate)
                 if candidate is not None:
-                    candidate = normalize_candidate(candidate)
                     used_places.add(candidate["id"])
 
             else:
@@ -482,41 +484,8 @@ def ranking_model():
                             break
                 schedule_result.append(candidate)
                 if candidate is not None:
-                    candidate = normalize_candidate(candidate)
                     used_places.add(candidate["id"])
         return schedule_result
-
-    def map_food_type_slots(classified, food_type_order, user_schedule_style, day_key, df_user_day):
-        """
-        classified: classify_df_user_day_by_type의 결과 (예, {2: {'음식점': [indices,...], '카페': [...], ...}, 4: [...], 6: [...]})
-        food_type_order: 위에 정의된 food_type_order dict
-        user_schedule_style: 예, 5 또는 7
-        day_key: "first_day", "middle_day", "last_day" 중 하나
-        df_user_day: 해당 day의 DataFrame
-
-        반환: food_type_order에 따라 각 슬롯에 해당하는 후보 행(dict)의 리스트를 반환.
-                예를 들어, order_list가 ["음식점", "음식점"]이면, classified["2"]["음식점"]에서 순서대로 인덱스 0번, 1번을 pop하여 해당 행 dict로 반환.
-                만약 후보가 부족하면 None을 반환.
-        """
-
-        # order_list에 해당하는 food type 순서를 가져옵니다.
-        order_list = food_type_order.get(user_schedule_style, {}).get(day_key, [])
-        result = []
-
-        # classified가 type 2 항목을 포함하지 않으면 빈 리스트 반환
-        if 2 not in classified:
-            return result
-
-        classified_type2 = classified[2]
-        for food_type in order_list:
-            if food_type in classified_type2 and classified_type2[food_type]:
-                # 동일한 food_type이 중복되면, pop(0)을 통해 순서대로 후보(인덱스)를 꺼냅니다.
-                idx = classified_type2[food_type].pop(0)
-                candidate = df_user_day.loc[idx].to_dict()
-                result.append(candidate)
-            else:
-                result.append(None)
-        return result
 
     # 사용자 일정 스타일 맵핑 (user_id -> schedule_style)
     def apply_itinerary_pattern(df_ranked_dest, df_final_base, user_info):
@@ -587,6 +556,9 @@ def ranking_model():
                                                  prev_accommodation, current_accommodation, current_tourism,
                                                  used_places)
 
+            # 최종 일정에 반환될 때 NullGuard
+            itinerary_list = [x for x in itinerary_list if x is not None]
+
             # 사용된 장소 업데이트
             for cand in itinerary_list:
                 if cand is not None:
@@ -596,6 +568,13 @@ def ranking_model():
             final_schedule[day] = itinerary_list
 
         return final_schedule
+
+    # Function for Model validation
+    def safe_str(val):
+        # pd.isna도 사용 가능
+        if pd.isna(val) or (isinstance(val, float) and math.isnan(val)):
+            return ""
+        return str(val)
 
     # Model Execute
     data, labels, group = prepare_data_for_xgb(df_combined)
@@ -615,14 +594,26 @@ def ranking_model():
             "routes": []
         }
 
+        # flag = False
         # 각 일정(루트)을 순서대로 RouteResponse에 맞게 변환
         for order_number, route_item in enumerate(user_schedule, start=1):
+            city_info = route_item.get("city")
+            # city_info가 dict이면 "kr_name" 값을 추출, 아니면 그대로 사용하거나 None 처리
+            if isinstance(city_info, dict):
+                city_value = city_info.get("kr_name")
+                # flag = True if not isinstance(city_value, str) else False
+            else:
+                city_value = city_info  # 이미 문자열일 경우 등
+
             destination = {
                 "id": route_item.get("id"),
-                "type": route_item.get("type"),
-                "kr_name": route_item.get("name"),
-                "title": route_item.get("title"),
-                "title_img": route_item.get("title_img"),
+                "type": str(route_item.get("type")),
+                "kr_name": safe_str(route_item.get("name")),
+                "city": {"krName": city_value},
+                "latitude": route_item.get("latitude"),
+                "longitude": route_item.get("longitude"),
+                "title": safe_str(route_item.get("title")),
+                "title_img": safe_str(route_item.get("title_img"))
             }
 
             route = {

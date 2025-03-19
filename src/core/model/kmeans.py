@@ -45,13 +45,32 @@ def k_means() -> None:
                 available_acc = filtered_df[filtered_df["type"] == 4]  # 중복 허용
 
             # threshold 지정
+            # threshold = score의 상위 25%만 사용, min_distance_threshold 이상인 숙박지 선정
             threshold = available_acc["score"].quantile(0.75)  # 예: 상위 25%의 score만 사용
+            min_distance_threshold = 1
             available_acc = available_acc[available_acc["score"] >= threshold]
 
-            acc = available_acc.sample(n=1, weights="score").iloc[0]  # 1개 선택
-            acc_location = (acc["latitude"], acc["longitude"])
+            # 이전 숙박지가 이미 선택되어 있다면, 거리를 계산하여 min_distance_threshold 이상인 숙박지를 선택
+            if selected_acc:
+                prev_location = selected_acc[-1]  # 마지막에 선택된 숙박지 (latitude, longitude)
+                available_acc = available_acc.copy()
+                available_acc["distance_from_prev"] = available_acc.apply(
+                    lambda row: geodesic((prev_location[1], prev_location[0]),
+                                         (row["longitude"], row["latitude"])).kilometers,
+                    axis=1
+                )
+                # print(available_acc[['latitude', 'longitude', 'distance_from_prev']].head(10))
 
-            # Add selected acc. to list
+                candidates = available_acc[available_acc["distance_from_prev"] >= min_distance_threshold]
+                if not candidates.empty:
+                    acc = candidates.sample(n=1, weights="score").iloc[0]
+                else:
+                    acc = available_acc.sort_values(by="distance_from_prev", ascending=False).iloc[0]
+            else:
+                acc = available_acc.sample(n=1, weights="score").iloc[0]
+
+            acc_location = (acc["latitude"], acc["longitude"])
+            # 숙박지 좌표를 한 번만 추가
             selected_acc.append(acc_location)
 
         def calculate_distance(row):
@@ -84,13 +103,21 @@ def k_means() -> None:
 
         # Radius for KMeans
         # @params : radius
-        def within_radius(row, center, radius=3):
+        # Add Logic : city_id에 따른 radius 설정
+        city_radius_mapping = {
+            1: 3,
+            2: 3,
+            3: 2.5,
+            4: 4
+        }
+
+        radius = city_radius_mapping.get(user_city, 3)
+        def within_radius(row, center, radius):
             location = (float(row["latitude"]), float(row["longitude"]))
             return geodesic((center[1], center[0]), (location[1], location[0])).kilometers <= radius
 
-
         clustered_places = filtered_df.loc[(filtered_df["type"].isin([1, 2, 3, 5, 6])) &
-            filtered_df.apply(lambda row: within_radius(row, midpoint), axis=1)].copy()
+            filtered_df.apply(lambda row: within_radius(row, midpoint, radius), axis=1)].copy()
 
         min_tourist_sites = 10
         if (clustered_places["type"] == 6).sum() < min_tourist_sites:
@@ -103,7 +130,6 @@ def k_means() -> None:
             selected_acc.pop()
             continue
 
-        # 클러스터링의 개수 제한 해제.
         """
         @params : radius, len(clustered_places)
         radius : 군집의 반경 범위, 크게 하면 더 많은 Rows를 가져올 수 있음

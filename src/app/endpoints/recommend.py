@@ -12,6 +12,7 @@ from src.dto.request.survey import SurveyRequest
 from src.core.model.kmeans import k_means
 from src.core.exception import BadReqException, RequiredQueryParameterException
 from src.core.model.rankmodel import ranking_model
+from src.dto.response import ScheduleResponse
 from src.utils import convert_query_params
 
 
@@ -32,10 +33,11 @@ async def get_recommend_schedule(survey: SurveyRequest, params: Dict[str, str]=D
     if recommendation is None:
         raise BadReqException()
 
+    recommendation["user_id"] = user_id
     # recommendation["city_id"] = survey["city_id"]
     # recommendation["start_date"] = survey["start_date"]
     # recommendation["end_date"] = survey["end_date"]
     # recommendation["city_name"] = survey["city"]
 
-
-    return recommendation
+    return ScheduleResponse.model_validate(recommendation)
+    # return recommendation

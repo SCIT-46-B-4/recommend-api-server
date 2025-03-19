@@ -11,6 +11,6 @@ class ResponseBaseModel(BaseModel):
         populate_by_name=True,
     )
 
-    id: int
-    created_at: datetime
+    id: int | None = None
+    created_at: datetime | None = None
     updated_at: datetime | None = None
