@@ -48,7 +48,7 @@ jobs:
 
     # Tag For ECR
     - name: Tag Docker image
-      run: docker tag business-server:latest ${{ secrets.ERC_REPOSITORY_URI }}
+      run: docker tag recommend-server:latest ${{ secrets.ERC_REPOSITORY_URI }}
 
     # ECR Push
     - name: Push to ECR
