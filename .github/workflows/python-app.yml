@@ -1,0 +1,48 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Python application
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.12.8
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.12.8"
+        
+    # AWS IAM Access
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    # Login ECR
+    - name: Login to Amazon ECR
+      run: |
+        aws ecr get-login-password --region us-east-1 \
+        | docker login --username AWS --password-stdin ${{ secrets.ECR_URI }}
+
+    # Docker Build
+    - name: Build Docker image
+      run: docker build -t recommend-server:latest .
+
+    # Tag For ECR
+    - name: Tag Docker image
+      run: docker tag recommend-server:latest ${{ secrets.ERC_REPOSITORY_URI }}
+
+    # ECR Push
+    - name: Push to ECR
+      run: docker push ${{ secrets.ERC_REPOSITORY_URI }}
