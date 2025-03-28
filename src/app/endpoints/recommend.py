@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Dict
 
 from fastapi import APIRouter, Depends, status
@@ -36,5 +37,11 @@ async def get_recommend_schedule(survey: SurveyRequest, params: Dict[str, str]=D
     recommendation["start_date"] = survey["start_date"]
     recommendation["end_date"] = survey["end_date"]
     recommendation["city_name"] = city_name
-
+    recommendation["detail_schedules"] = [
+        {
+            **{k: v for k, v in detail.items() if k != "day"},
+            "date": recommendation["start_date"] + timedelta(days=detail["day"] - 1)
+        } for detail in recommendation["detail_schedules"]
+    ]
+    print(recommendation)
     return ScheduleResponse.model_validate(recommendation)

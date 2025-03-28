@@ -6,6 +6,5 @@ from src.dto.base_model import ResponseBaseModel
 
 
 class DetailScheduleResponse(ResponseBaseModel):
-    date: datetime | None = None
-    day: int
+    date: datetime | None
     routes: List[RouteResponse] = []

@@ -55,11 +55,12 @@ def k_means() -> None:
                 prev_location = selected_acc[-1]  # 마지막에 선택된 숙박지 (latitude, longitude)
                 available_acc = available_acc.copy()
                 available_acc["distance_from_prev"] = available_acc.apply(
-                    lambda row: geodesic((prev_location[1], prev_location[0]),
-                                         (row["longitude"], row["latitude"])).kilometers,
+                    lambda row: geodesic(
+                        (prev_location[1], prev_location[0]),
+                        (row["longitude"], row["latitude"])
+                    ).kilometers,
                     axis=1
                 )
-                # print(available_acc[['latitude', 'longitude', 'distance_from_prev']].head(10))
 
                 candidates = available_acc[available_acc["distance_from_prev"] >= min_distance_threshold]
                 if not candidates.empty:
